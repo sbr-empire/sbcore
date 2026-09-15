@@ -20,15 +20,15 @@ import admin from 'firebase-admin';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.SBR_PORT || 8080;
 
 // ============================================================================
 // 🔐 MIDDLEWARE SETUP
 // ============================================================================
 
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || '*',
-  methods: process.env.ALLOWED_METHODS?.split(',') || ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: process.env.SBR_CORS_ORIGIN?.split(',') || '*',
+  methods: process.env.SBR_ALLOWED_METHODS?.split(',') || ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 
@@ -40,15 +40,15 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // ============================================================================
 
 const firebaseConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  projectId: process.env.SBR_FIREBASE_PROJECT_ID,
+  apiKey: process.env.SBR_FIREBASE_API_KEY,
+  authDomain: process.env.SBR_FIREBASE_AUTH_DOMAIN,
+  storageBucket: process.env.SBR_FIREBASE_STORAGE_BUCKET,
 };
 
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: process.env.GCP_PROJECT_ID,
+    projectId: process.env.SBR_GCP_PROJECT_ID,
   });
 }
 
@@ -66,7 +66,7 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.SBR_JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -92,7 +92,6 @@ app.get('/health', (req, res) => {
 // 🔐 AUTHENTICATION ENDPOINTS
 // ============================================================================
 
-// Register User
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -107,8 +106,7 @@ app.post('/api/auth/register', async (req, res) => {
       displayName: name
     });
 
-    // Store user in Firestore
-    await db.collection(process.env.FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).set({
+    await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).set({
       uid: userRecord.uid,
       email,
       name,
@@ -131,7 +129,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Login User
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -140,40 +137,33 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Get user by email
     const userRecord = await admin.auth().getUserByEmail(email);
-
-    // Create custom token
     const customToken = await admin.auth().createCustomToken(userRecord.uid);
-
-    // Get user data from Firestore
-    const userDoc = await db.collection(process.env.FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).get();
+    const userDoc = await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).get();
 
     res.json({
       success: true,
       token: customToken,
       user: userDoc.data(),
-      expiresIn: process.env.JWT_EXPIRY
+      expiresIn: process.env.SBR_JWT_EXPIRY
     });
   } catch (error) {
     res.status(401).json({ error: 'Invalid credentials' });
   }
 });
 
-// Get User Profile
 app.get('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    const userDoc = await db.collection(process.env.FIRESTORE_USERS_COLLECTION).doc(req.user.uid).get();
+    const userDoc = await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(req.user.uid).get();
     res.json(userDoc.data());
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Update User Profile
 app.put('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    await db.collection(process.env.FIRESTORE_USERS_COLLECTION).doc(req.user.uid).update({
+    await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(req.user.uid).update({
       ...req.body,
       updatedAt: new Date()
     });
@@ -188,7 +178,6 @@ app.put('/api/auth/profile', verifyToken, async (req, res) => {
 // 🤖 AI SERVICES ENDPOINTS
 // ============================================================================
 
-// SBR Aql - Islamic Knowledge (OpenAI GPT-4o)
 app.post('/api/ai/aql', verifyToken, async (req, res) => {
   try {
     const { question } = req.body;
@@ -209,7 +198,7 @@ app.post('/api/ai/aql', verifyToken, async (req, res) => {
       max_tokens: 1000
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.SBR_OPENAI_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
@@ -225,7 +214,6 @@ app.post('/api/ai/aql', verifyToken, async (req, res) => {
   }
 });
 
-// SBR Qalam - Smart Writing (Claude 3.5 Sonnet)
 app.post('/api/ai/qalam', verifyToken, async (req, res) => {
   try {
     const { text, task } = req.body;
@@ -241,7 +229,7 @@ app.post('/api/ai/qalam', verifyToken, async (req, res) => {
       ]
     }, {
       headers: {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': process.env.SBR_ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json'
       }
@@ -259,13 +247,12 @@ app.post('/api/ai/qalam', verifyToken, async (req, res) => {
   }
 });
 
-// SBR Safar - Location Intelligence (Google Gemini)
 app.post('/api/ai/safar', verifyToken, async (req, res) => {
   try {
     const { question, latitude, longitude } = req.body;
 
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.SBR_GEMINI_API_KEY}`,
       {
         contents: [{
           parts: [{
@@ -291,13 +278,12 @@ app.post('/api/ai/safar', verifyToken, async (req, res) => {
 // 💾 DATABASE ENDPOINTS (CRUD Operations)
 // ============================================================================
 
-// Get All Documents
 app.get('/api/db/:collection', async (req, res) => {
   try {
     const { collection } = req.params;
-    const collectionRef = db.collection(process.env.FIRESTORE_COLLECTION_PREFIX + collection);
+    const collectionRef = db.collection(process.env.SBR_FIRESTORE_COLLECTION_PREFIX + collection);
     const snapshot = await collectionRef.get();
-    
+
     const data = [];
     snapshot.forEach(doc => {
       data.push({ id: doc.id, ...doc.data() });
@@ -313,11 +299,10 @@ app.get('/api/db/:collection', async (req, res) => {
   }
 });
 
-// Get Single Document
 app.get('/api/db/:collection/:id', async (req, res) => {
   try {
     const { collection, id } = req.params;
-    const doc = await db.collection(process.env.FIRESTORE_COLLECTION_PREFIX + collection).doc(id).get();
+    const doc = await db.collection(process.env.SBR_FIRESTORE_COLLECTION_PREFIX + collection).doc(id).get();
 
     if (!doc.exists) {
       return res.status(404).json({ error: 'Document not found' });
@@ -329,11 +314,10 @@ app.get('/api/db/:collection/:id', async (req, res) => {
   }
 });
 
-// Create Document
 app.post('/api/db/:collection', verifyToken, async (req, res) => {
   try {
     const { collection } = req.params;
-    const docRef = await db.collection(process.env.FIRESTORE_COLLECTION_PREFIX + collection).add({
+    const docRef = await db.collection(process.env.SBR_FIRESTORE_COLLECTION_PREFIX + collection).add({
       ...req.body,
       createdAt: new Date(),
       createdBy: req.user.uid
@@ -349,11 +333,10 @@ app.post('/api/db/:collection', verifyToken, async (req, res) => {
   }
 });
 
-// Update Document
 app.put('/api/db/:collection/:id', verifyToken, async (req, res) => {
   try {
     const { collection, id } = req.params;
-    await db.collection(process.env.FIRESTORE_COLLECTION_PREFIX + collection).doc(id).update({
+    await db.collection(process.env.SBR_FIRESTORE_COLLECTION_PREFIX + collection).doc(id).update({
       ...req.body,
       updatedAt: new Date(),
       updatedBy: req.user.uid
@@ -365,11 +348,10 @@ app.put('/api/db/:collection/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Delete Document
 app.delete('/api/db/:collection/:id', verifyToken, async (req, res) => {
   try {
     const { collection, id } = req.params;
-    await db.collection(process.env.FIRESTORE_COLLECTION_PREFIX + collection).doc(id).delete();
+    await db.collection(process.env.SBR_FIRESTORE_COLLECTION_PREFIX + collection).doc(id).delete();
 
     res.json({ success: true, message: 'Document deleted' });
   } catch (error) {
@@ -383,9 +365,6 @@ app.delete('/api/db/:collection/:id', verifyToken, async (req, res) => {
 
 app.post('/api/payments/create-intent', verifyToken, async (req, res) => {
   try {
-    const { amount, currency, description } = req.body;
-
-    // Stripe implementation would go here
     res.json({
       success: true,
       clientSecret: 'pi_test_secret',
@@ -400,7 +379,6 @@ app.post('/api/payments/create-intent', verifyToken, async (req, res) => {
 // 🌍 EXTERNAL API ENDPOINTS
 // ============================================================================
 
-// Get Air Quality (AirNow)
 app.get('/api/environmental/air-quality', async (req, res) => {
   try {
     const { latitude, longitude } = req.query;
@@ -409,7 +387,7 @@ app.get('/api/environmental/air-quality', async (req, res) => {
       params: {
         lat: latitude,
         lon: longitude,
-        key: process.env.AIRNOW_API_KEY
+        key: process.env.SBR_AIRNOW_API_KEY
       }
     });
 
@@ -422,7 +400,6 @@ app.get('/api/environmental/air-quality', async (req, res) => {
   }
 });
 
-// Get Weather Forecast (OpenWeatherMap)
 app.get('/api/environmental/weather', async (req, res) => {
   try {
     const { latitude, longitude, days } = req.query;
@@ -431,7 +408,7 @@ app.get('/api/environmental/weather', async (req, res) => {
       params: {
         lat: latitude,
         lon: longitude,
-        appid: process.env.WEATHER_API_KEY,
+        appid: process.env.SBR_OPENWEATHER_API_KEY,
         units: 'metric'
       }
     });
@@ -446,7 +423,6 @@ app.get('/api/environmental/weather', async (req, res) => {
   }
 });
 
-// Get NASA Climate Data
 app.get('/api/environmental/climate', async (req, res) => {
   try {
     const { latitude, longitude } = req.query;
@@ -456,7 +432,7 @@ app.get('/api/environmental/climate', async (req, res) => {
         lon: longitude,
         lat: latitude,
         dim: 0.15,
-        api_key: process.env.NASA_API_KEY
+        api_key: process.env.SBR_NASA_API_KEY
       }
     });
 
@@ -480,7 +456,6 @@ app.post('/api/ai/batch', verifyToken, async (req, res) => {
 
     const results = [];
     for (const request of requests) {
-      // Process each request based on its type
       results.push({
         type: request.type,
         status: 'processed',
@@ -531,7 +506,7 @@ app.listen(PORT, () => {
 ╚═══════════════════════════════════════════════════════════╝
 
 ✅ Server running on: http://localhost:${PORT}
-📡 Environment: ${process.env.NODE_ENV}
+📡 Environment: ${process.env.SBR_NODE_ENV}
 🔐 JWT: Configured
 🌐 CORS: Enabled
 💾 Firestore: Connected
