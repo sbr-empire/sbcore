@@ -180,7 +180,7 @@ gcloud run deploy sbr-core \
   --timeout 3600 \
   --max-instances 100 \
   --min-instances 1 \
-  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=falaksayyed8474-org,PORT=8080 \
+  --set-env-vars SBR_NODE_ENV=production,SBR_FIREBASE_PROJECT_ID=falaksayyed8474-org,SBR_GCP_PROJECT_ID=falaksayyed8474-org,SBR_PORT=8080 \
   --platform managed \
   --quiet
 

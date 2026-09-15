@@ -13,7 +13,7 @@ import dbRoutes from './routes/database.routes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.SBR_PORT || 8080;
 
 // ============================================================================
 // MIDDLEWARE
@@ -21,9 +21,9 @@ const PORT = process.env.PORT || 8080;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || '*',
+  origin: process.env.SBR_CORS_ORIGIN?.split(',') || '*',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  methods: process.env.SBR_ALLOWED_METHODS?.split(',') || ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -42,7 +42,7 @@ app.get('/health', (req, res) => {
 app.get('/status', (req, res) => {
   res.json({
     status: 'operational',
-    environment: process.env.NODE_ENV,
+    environment: process.env.SBR_NODE_ENV,
     services: {
       firebase: 'connected',
       googleCloud: 'connected',
