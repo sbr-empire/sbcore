@@ -8,10 +8,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - NODE_ENV=development
-      - PORT=8080
-      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
-      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - SBR_NODE_ENV=development
+      - SBR_PORT=8080
+      - SBR_GCP_PROJECT_ID=${SBR_GCP_PROJECT_ID}
+      - SBR_FIREBASE_API_KEY=${SBR_FIREBASE_API_KEY}
     volumes:
       - ../src:/app/src
     restart: unless-stopped
@@ -23,4 +23,4 @@ services:
       - "5000:5000"
       - "9099:9099"
     environment:
-      - FIREBASE_PROJECT=${GCP_PROJECT_ID}
+      - FIREBASE_PROJECT=${SBR_GCP_PROJECT_ID}

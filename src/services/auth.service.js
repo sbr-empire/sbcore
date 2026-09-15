@@ -4,19 +4,30 @@
  */
 
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import { auth, db } from '../config/firebase.js';
+import {
+  createAuthToken,
+  getUsersCollectionName,
+  hashPassword,
+  sanitizeProfileUpdates,
+  sanitizeUser,
+  verifyAuthToken,
+  verifyPassword
+} from '../utils/auth.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
+const USERS_COLLECTION = getUsersCollectionName();
 
 // ============================================================================
 // USER REGISTRATION
 // ============================================================================
 export async function registerUser(email, password, profile = {}) {
+  let userRecord;
+
   try {
+    const passwordHash = await hashPassword(password);
+
     // Create Firebase Auth User
-    const userRecord = await auth.createUser({
+    userRecord = await auth.createUser({
       email,
       password,
       displayName: profile.name || 'User',
@@ -24,13 +35,14 @@ export async function registerUser(email, password, profile = {}) {
     });
 
     // Store User Profile in Firestore
-    await db.collection('users').doc(userRecord.uid).set({
+    await db.collection(USERS_COLLECTION).doc(userRecord.uid).set({
       uid: userRecord.uid,
       email: email,
       name: profile.name || 'User',
       phone: profile.phone || null,
       avatar: profile.photoURL || null,
       role: profile.role || 'user',
+      passwordHash,
       verified: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -47,6 +59,10 @@ export async function registerUser(email, password, profile = {}) {
       message: 'User registered successfully'
     };
   } catch (error) {
+    if (userRecord?.uid) {
+      await auth.deleteUser(userRecord.uid).catch(() => {});
+    }
+
     console.error('Registration error:', error);
     return {
       success: false,
@@ -60,23 +76,30 @@ export async function registerUser(email, password, profile = {}) {
 // ============================================================================
 export async function loginUser(email, password) {
   try {
-    // Verify credentials via Firebase
     const user = await auth.getUserByEmail(email);
+    const userDoc = await db.collection(USERS_COLLECTION).doc(user.uid).get();
 
-    // Generate JWT Token
-    const token = jwt.sign(
-      { uid: user.uid, email: user.email, role: user.customClaims?.role || 'user' },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
-    );
+    if (!userDoc.exists) {
+      throw new Error('User not found');
+    }
 
-    // Get User Profile
-    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+    const isValidPassword = await verifyPassword(password, userData.passwordHash);
+
+    if (!isValidPassword) {
+      throw new Error('Invalid credentials');
+    }
+
+    const token = createAuthToken({
+      uid: user.uid,
+      email: user.email,
+      role: userData.role || user.customClaims?.role || 'user'
+    });
 
     return {
       success: true,
       token,
-      user: userDoc.data()
+      user: sanitizeUser(userData)
     };
   } catch (error) {
     console.error('Login error:', error);
@@ -92,7 +115,7 @@ export async function loginUser(email, password) {
 // ============================================================================
 export function verifyToken(token) {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = verifyAuthToken(token);
     return { valid: true, data: decoded };
   } catch (error) {
     return { valid: false, error: error.message };
@@ -104,11 +127,11 @@ export function verifyToken(token) {
 // ============================================================================
 export async function getUserProfile(uid) {
   try {
-    const userDoc = await db.collection('users').doc(uid).get();
+    const userDoc = await db.collection(USERS_COLLECTION).doc(uid).get();
     if (!userDoc.exists) {
       return { success: false, error: 'User not found' };
     }
-    return { success: true, user: userDoc.data() };
+    return { success: true, user: sanitizeUser(userDoc.data()) };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -119,8 +142,8 @@ export async function getUserProfile(uid) {
 // ============================================================================
 export async function updateUserProfile(uid, updates) {
   try {
-    await db.collection('users').doc(uid).update({
-      ...updates,
+    await db.collection(USERS_COLLECTION).doc(uid).update({
+      ...sanitizeProfileUpdates(updates),
       updatedAt: new Date()
     });
     return { success: true, message: 'Profile updated' };
