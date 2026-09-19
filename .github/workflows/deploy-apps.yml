@@ -1,0 +1,48 @@
+name: Deploy Three Separate Apps to GCP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-apps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: 'projects/236109312151/locations/global/workloadIdentityPools/github-global-pool/providers/github-provider'
+        service_account: 'github-deployer@://gserviceaccount.com'
+
+    - name: Deploy Bioforge
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: sbrbioforge
+        region: us-central1
+        source: ./sbrbioforge.com
+        project_id: sbrbioforge-508908
+
+    - name: Deploy Beautyhub
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: sbrbeautyhub
+        region: us-central1
+        source: ./sbrbeautyhub.com
+        project_id: sbrbeautyhub-508920
+
+    - name: Deploy Hikmah
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: sbrhikmah
+        region: us-central1
+        source: ./sbrhikmah.com
+        project_id: sbrhikmah-508920
+        
