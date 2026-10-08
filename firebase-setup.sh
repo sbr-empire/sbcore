@@ -20,12 +20,12 @@ for entry in "${SITES[@]}"; do
   firebase hosting:sites:create "$site" --project "$PROJECT_ID" 2>/dev/null || echo "site $site exists"
   for host in "$domain" "www.$domain"; do
     curl -sS -X POST "$API/$site/customDomains?customDomainId=$host" \
-      -H "Authorization: ******" -H "x-goog-user-project: $PROJECT_ID" \
+      -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: $PROJECT_ID" \
       -H "Content-Type: application/json" -d '{}' >/dev/null || true
   done
   echo; echo "# DNS records for $domain (Hostinger DNS Zone Editor):"
   curl -sS "$API/$site/customDomains/$domain" \
-    -H "Authorization: ******" -H "x-goog-user-project: $PROJECT_ID" \
+    -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: $PROJECT_ID" \
     | python3 -c 'import sys,json; d=json.load(sys.stdin); print(json.dumps(d.get("requiredDnsUpdates",d),indent=2))'
 done
 
