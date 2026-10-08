@@ -1,0 +1,20 @@
+{
+  "projects": {
+    "default": "temporal-ground-507415-b2"
+  },
+  "targets": {
+    "temporal-ground-507415-b2": {
+      "hosting": {
+        "sbrbioforge": [
+          "sbrbioforge"
+        ],
+        "sbrhikmah": [
+          "sbrhikmah"
+        ],
+        "sbrbeautyhub": [
+          "sbrbeautyhub"
+        ]
+      }
+    }
+  }
+}
