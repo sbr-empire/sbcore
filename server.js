@@ -15,12 +15,26 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import admin from 'firebase-admin';
+import {
+  createAuthToken,
+  getJwtExpiry,
+  getJwtSecret,
+  getUsersCollectionName,
+  hashPassword,
+  sanitizeProfileUpdates,
+  sanitizeUser,
+  verifyAuthToken,
+  verifyPassword
+} from './src/utils/auth.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.SBR_PORT || 8080;
+const USERS_COLLECTION = getUsersCollectionName();
+
+getJwtSecret();
 
 // ============================================================================
 // 🔐 MIDDLEWARE SETUP
@@ -66,7 +80,7 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.SBR_JWT_SECRET);
+    const decoded = verifyAuthToken(token);
     req.user = decoded;
     next();
   } catch (error) {
@@ -93,6 +107,8 @@ app.get('/health', (req, res) => {
 // ============================================================================
 
 app.post('/api/auth/register', async (req, res) => {
+  let userRecord;
+
   try {
     const { email, password, name } = req.body;
 
@@ -100,18 +116,23 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const userRecord = await admin.auth().createUser({
+    const passwordHash = await hashPassword(password);
+
+    userRecord = await admin.auth().createUser({
       email,
       password,
       displayName: name
     });
 
-    await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).set({
+    await db.collection(USERS_COLLECTION).doc(userRecord.uid).set({
       uid: userRecord.uid,
       email,
       name,
       role: 'user',
+      passwordHash,
+      verified: false,
       createdAt: new Date(),
+      updatedAt: new Date(),
       preferences: {
         language: 'en',
         theme: 'dark'
@@ -125,6 +146,10 @@ app.post('/api/auth/register', async (req, res) => {
       message: 'User registered successfully'
     });
   } catch (error) {
+    if (userRecord?.uid) {
+      await admin.auth().deleteUser(userRecord.uid).catch(() => {});
+    }
+
     res.status(400).json({ error: error.message });
   }
 });
@@ -138,14 +163,30 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const userRecord = await admin.auth().getUserByEmail(email);
-    const customToken = await admin.auth().createCustomToken(userRecord.uid);
-    const userDoc = await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(userRecord.uid).get();
+    const userDoc = await db.collection(USERS_COLLECTION).doc(userRecord.uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const userData = userDoc.data();
+    const isValidPassword = await verifyPassword(password, userData.passwordHash);
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = createAuthToken({
+      uid: userRecord.uid,
+      email: userRecord.email,
+      role: userData.role || 'user'
+    });
 
     res.json({
       success: true,
-      token: customToken,
-      user: userDoc.data(),
-      expiresIn: process.env.SBR_JWT_EXPIRY
+      token,
+      user: sanitizeUser(userData),
+      expiresIn: getJwtExpiry()
     });
   } catch (error) {
     res.status(401).json({ error: 'Invalid credentials' });
@@ -154,8 +195,13 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    const userDoc = await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(req.user.uid).get();
-    res.json(userDoc.data());
+    const userDoc = await db.collection(USERS_COLLECTION).doc(req.user.uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(sanitizeUser(userDoc.data()));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -163,8 +209,8 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
 
 app.put('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    await db.collection(process.env.SBR_FIRESTORE_USERS_COLLECTION).doc(req.user.uid).update({
-      ...req.body,
+    await db.collection(USERS_COLLECTION).doc(req.user.uid).update({
+      ...sanitizeProfileUpdates(req.body),
       updatedAt: new Date()
     });
 

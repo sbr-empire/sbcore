@@ -7,9 +7,9 @@ import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const openai = new OpenAI({ apiKey: process.env.SBR_OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.SBR_ANTHROPIC_API_KEY });
+const gemini = new GoogleGenerativeAI(process.env.SBR_GEMINI_API_KEY);
 
 // ============================================================================
 // SBR AQL - ISLAMIC KNOWLEDGE (GPT-4o)
