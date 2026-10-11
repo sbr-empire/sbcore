@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+env:
+  PROJECT_ID: sbrempire-dced5
+  REGION: asia-south2
+
 jobs:
   deploy-apps:
     runs-on: ubuntu-latest
@@ -19,30 +23,31 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: 'projects/236109312151/locations/global/workloadIdentityPools/github-global-pool/providers/github-provider'
-        service_account: 'github-deployer@://gserviceaccount.com'
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        project_id: ${{ env.PROJECT_ID }}
 
     - name: Deploy Bioforge
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: sbrbioforge
-        region: us-central1
+        region: ${{ env.REGION }}
         source: ./sbrbioforge.com
-        project_id: sbrbioforge-508908
+        project_id: ${{ env.PROJECT_ID }}
 
     - name: Deploy Beautyhub
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: sbrbeautyhub
-        region: us-central1
+        region: ${{ env.REGION }}
         source: ./sbrbeautyhub.com
-        project_id: sbrbeautyhub-508920
+        project_id: ${{ env.PROJECT_ID }}
 
     - name: Deploy Hikmah
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: sbrhikmah
-        region: us-central1
+        region: ${{ env.REGION }}
         source: ./sbrhikmah.com
-        project_id: sbrhikmah-508920
+        project_id: ${{ env.PROJECT_ID }}
         
