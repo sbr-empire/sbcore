@@ -26,7 +26,7 @@ echo ""
 # CONFIGURATION
 # ============================================
 
-PROJECT_ID="temporal-ground-507415-b2"
+PROJECT_ID="sbrempire-dced5"
 REGION="us-central1"
 DEVELOPER_EMAIL="falaksayyed8474@gmail.com"
 PLAYSTORE_EMAIL="fnaazsayyed@gmail.com"

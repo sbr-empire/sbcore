@@ -10,7 +10,7 @@ set -e
 # CONFIGURATION
 # ============================================
 
-PROJECT_ID="temporal-ground-507415-b2"
+PROJECT_ID="sbrempire-dced5"
 REGION="us-central1"
 DEVELOPER_EMAIL="falaksayyed8474@gmail.com"
 HOSTINGER_EMAIL="fnaazsayyed@gmail.com"
@@ -180,7 +180,7 @@ gcloud run deploy sbr-core \
   --timeout 3600 \
   --max-instances 100 \
   --min-instances 1 \
-  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=falaksayyed8474-org,PORT=8080 \
+  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=sbrempire-dced5,PORT=8080 \
   --platform managed \
   --quiet
 
@@ -261,7 +261,7 @@ gcloud run deploy sbr-bioforge \
   --timeout 3600 \
   --max-instances 50 \
   --min-instances 1 \
-  --set-env-vars "REACT_APP_SBCORE_API=$BACKEND_URL,REACT_APP_FIREBASE_PROJECT_ID=falaksayyed8474-org" \
+  --set-env-vars "REACT_APP_SBCORE_API=$BACKEND_URL,REACT_APP_FIREBASE_PROJECT_ID=sbrempire-dced5" \
   --platform managed \
   --quiet
 
