@@ -1,0 +1,12 @@
+{
+  "projects": { "default": "sbrempire-dced5" },
+  "targets": {
+    "sbrempire-dced5": {
+      "hosting": {
+        "hikmah": ["sbrhikmah"],
+        "beautyhub": ["sbrbeautyhub"],
+        "bioforge": ["sbrbioforge"]
+      }
+    }
+  }
+}
