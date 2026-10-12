@@ -10,6 +10,8 @@ import { getStorage } from 'firebase-admin/storage';
 import { getAuth } from 'firebase-admin/auth';
 import { getMessaging } from 'firebase-admin/messaging';
 
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || process.env.GCP_PROJECT_ID;
+
 // Initialize Firebase Admin SDK
 const serviceAccount = {
   type: process.env.GCP_TYPE || 'service_account',
@@ -25,9 +27,9 @@ const serviceAccount = {
 
 const firebaseApp = initializeApp({
   credential: cert(serviceAccount),
-  projectId: process.env.GCP_PROJECT_ID,
+  projectId: firebaseProjectId,
   storageBucket: process.env.GCP_STORAGE_BUCKET,
-  databaseURL: `https://${process.env.GCP_PROJECT_ID}.firebaseio.com`
+  databaseURL: `https://${firebaseProjectId}.firebaseio.com`
 });
 
 // Initialize Services

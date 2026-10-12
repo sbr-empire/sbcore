@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  PROJECT_ID: sbrempire-dced5
+
 jobs:
   deploy-apps:
     runs-on: ubuntu-latest
@@ -34,7 +37,7 @@ jobs:
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
         firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SBREMPIRE_DCED5 }}
-        projectId: sbrempire-dced5
+        projectId: ${{ env.PROJECT_ID }}
         channelId: live
         target: ${{ matrix.target }}
       env:

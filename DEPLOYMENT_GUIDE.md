@@ -19,8 +19,8 @@ gcloud services enable run.googleapis.com
 gcloud iam service-accounts create sbr-core-deploy
 
 # 5. Permissions दें
-gcloud projects add-iam-policy-binding temporal-ground-507415-b2 \
-  --member=serviceAccount:sbr-core-deploy@temporal-ground-507415-b2.iam.gserviceaccount.com \
+gcloud projects add-iam-policy-binding sbrempire-dced5 \
+  --member=serviceAccount:sbr-core-deploy@sbrempire-dced5.iam.gserviceaccount.com \
   --role=roles/run.admin
 ```
 
@@ -29,11 +29,11 @@ gcloud projects add-iam-policy-binding temporal-ground-507415-b2 \
 cd sbcore
 
 # Build and push Docker image
-gcloud builds submit --tag gcr.io/temporal-ground-507415-b2/sbr-core
+gcloud builds submit --tag gcr.io/sbrempire-dced5/sbr-core
 
 # Deploy to Cloud Run
 gcloud run deploy sbr-core \
-  --image gcr.io/temporal-ground-507415-b2/sbr-core \
+  --image gcr.io/sbrempire-dced5/sbr-core \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
@@ -419,11 +419,11 @@ User approval flow working?
 cd sbcore
 
 # 2. Build Docker image
-gcloud builds submit --tag gcr.io/temporal-ground-507415-b2/sbr-core
+gcloud builds submit --tag gcr.io/sbrempire-dced5/sbr-core
 
 # 3. Deploy
 gcloud run deploy sbr-core \
-  --image gcr.io/temporal-ground-507415-b2/sbr-core \
+  --image gcr.io/sbrempire-dced5/sbr-core \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated
