@@ -1,0 +1,49 @@
+# Firebase App Hosting config. Secrets are stored in GCP Secret Manager
+# (create with: firebase apphosting:secrets:set <NAME>).
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 10
+
+env:
+  - variable: NODE_ENV
+    value: production
+  - variable: CORS_ORIGIN
+    value: https://sbrhikmah.com,https://sbrbeautyhub.com,https://sbrbioforge.com
+  - variable: ALLOWED_METHODS
+    value: GET,POST,PUT,DELETE,PATCH
+  - variable: FIRESTORE_COLLECTION_PREFIX
+    value: sbr_
+  - variable: JWT_EXPIRY
+    value: 7d
+  - variable: FIREBASE_AUTH_DOMAIN
+    value: sbrhikmah.com
+  - variable: GCP_PROJECT_ID
+    secret: GCP_PROJECT_ID
+  - variable: GCP_CLIENT_EMAIL
+    secret: GCP_CLIENT_EMAIL
+  - variable: GCP_PRIVATE_KEY
+    secret: GCP_PRIVATE_KEY
+  - variable: GCP_STORAGE_BUCKET
+    secret: GCP_STORAGE_BUCKET
+  - variable: FIREBASE_API_KEY
+    secret: FIREBASE_API_KEY
+  - variable: FIREBASE_PROJECT_ID
+    secret: FIREBASE_PROJECT_ID
+  - variable: FIREBASE_STORAGE_BUCKET
+    secret: FIREBASE_STORAGE_BUCKET
+  - variable: JWT_SECRET
+    secret: JWT_SECRET
+  - variable: OPENAI_API_KEY
+    secret: OPENAI_API_KEY
+  - variable: ANTHROPIC_API_KEY
+    secret: ANTHROPIC_API_KEY
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+  - variable: NASA_API_KEY
+    secret: NASA_API_KEY
+  - variable: AIRNOW_API_KEY
+    secret: AIRNOW_API_KEY
+  - variable: WEATHER_API_KEY
+    secret: WEATHER_API_KEY
