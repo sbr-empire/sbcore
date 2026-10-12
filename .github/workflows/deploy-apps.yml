@@ -1,4 +1,4 @@
-name: Deploy Three Separate Apps to GCP
+name: Deploy Apps to Firebase Hosting
 
 on:
   push:
@@ -7,48 +7,39 @@ on:
 
 env:
   PROJECT_ID: sbrempire-dced5
-  REGION: asia-south2
 
 jobs:
   deploy-apps:
     if: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && secrets.GCP_SERVICE_ACCOUNT != '' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
+    strategy:
+      matrix:
+        include:
+          - { app: sbrhikmah, target: hikmah }
+          - { app: sbrbeautyhub, target: beautyhub }
+          - { app: sbrbioforge, target: bioforge }
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
+    - name: Setup Node
+      uses: actions/setup-node@v4
       with:
-        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-        project_id: ${{ env.PROJECT_ID }}
+        node-version: 20
 
-    - name: Deploy Bioforge
-      uses: google-github-actions/deploy-cloudrun@v2
-      with:
-        service: sbrbioforge
-        region: ${{ env.REGION }}
-        source: ./sbrbioforge.com
-        project_id: ${{ env.PROJECT_ID }}
+    - name: Build
+      working-directory: ./${{ matrix.app }}.com
+      run: |
+        npm install
+        npm run build
 
-    - name: Deploy Beautyhub
-      uses: google-github-actions/deploy-cloudrun@v2
+    - name: Deploy to Firebase Hosting
+      uses: FirebaseExtended/action-hosting-deploy@v0
       with:
-        service: sbrbeautyhub
-        region: ${{ env.REGION }}
-        source: ./sbrbeautyhub.com
-        project_id: ${{ env.PROJECT_ID }}
-
-    - name: Deploy Hikmah
-      uses: google-github-actions/deploy-cloudrun@v2
-      with:
-        service: sbrhikmah
-        region: ${{ env.REGION }}
-        source: ./sbrhikmah.com
-        project_id: ${{ env.PROJECT_ID }}
-        
+        repoToken: ${{ secrets.GITHUB_TOKEN }}
+        firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SBREMPIRE_DCED5 }}
+        projectId: ${{ env.PROJECT_ID }}
+        channelId: live
+        target: ${{ matrix.target }}
+      env:
+        FIREBASE_CLI_PREVIEW: hostingchannels

@@ -10,7 +10,7 @@
 # 1. GCP Console में जाएं
 # https://console.cloud.google.com
 
-# 2. Project चुनें: falaksayyed8474-org (ID: 922220496736361)
+# 2. Project चुनें: sbrempire-dced5 (ID: 922220496736361)
 
 # 3. Cloud Run API enable करें
 gcloud services enable run.googleapis.com
@@ -37,7 +37,7 @@ gcloud run deploy sbr-core \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=falaksayyed8474-org
+  --set-env-vars NODE_ENV=production,FIREBASE_PROJECT_ID=sbrempire-dced5
 ```
 
 ### C. मिलेगा URL (Live Backend)
@@ -85,17 +85,17 @@ REACT_APP_SBCORE_API=https://sbr-core-xxxxx.run.app
 # SBR HIKMAH
 cd sbrhikmah.com
 npm run build
-firebase deploy --project falaksayyed8474-org
+firebase deploy --project sbrempire-dced5
 
 # SBR BEAUTY HUB
 cd sbrbeautyhub.com
 npm run build
-firebase deploy --project falaksayyed8474-org
+firebase deploy --project sbrempire-dced5
 
 # SBR BIOFORGE
 cd sbrbioforge.com
 npm run build
-firebase deploy --project falaksayyed8474-org
+firebase deploy --project sbrempire-dced5
 ```
 
 ### D. मिलेंगे URLs
@@ -434,7 +434,7 @@ gcloud run deploy sbr-core \
 npm run build
 
 # 3. Deploy
-firebase deploy --project falaksayyed8474-org
+firebase deploy --project sbrempire-dced5
 
 # === MOBILE APPS ===
 # 1. Build AAB

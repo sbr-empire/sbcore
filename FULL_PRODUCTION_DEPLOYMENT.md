@@ -209,7 +209,7 @@ gcloud run deploy sbr-core \
   --timeout 3600 \
   --set-env-vars \
     NODE_ENV=production,\
-    FIREBASE_PROJECT_ID=falaksayyed8474-org,\
+    FIREBASE_PROJECT_ID=sbrempire-dced5,\
     OPENAI_API_KEY=sk-...,\
     ANTHROPIC_API_KEY=sk-ant-...,\
     GOOGLE_API_KEY=AIzaSy...,\
