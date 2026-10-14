@@ -3,28 +3,23 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
-  PROJECT_ID: sbrhikmah-508920
+  PROJECT_ID: sbrempire-dced5
   REGION: asia-south2
-  SERVICE: sbrhikmah
+  SERVICE: sbr-core
 
 jobs:
-  deploy:
+  backend:
+    name: Backend -> Cloud Run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Build frontend
-        run: npm run build
 
       - uses: google-github-actions/auth@v2
         with:
@@ -32,7 +27,7 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy backend to Cloud Run
+      - name: Deploy to Cloud Run
         run: |
           cp docker/Dockerfile Dockerfile
           gcloud run deploy "$SERVICE" \
@@ -43,5 +38,32 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
-      - name: Deploy frontend to Firebase Hosting
-        run: npx --yes firebase-tools@latest deploy --only hosting --project "$PROJECT_ID" --non-interactive
+  frontend:
+    name: Frontend (${{ matrix.app }}) -> Firebase Hosting
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: sbrhikmah, target: hikmah }
+          - { app: sbrbeautyhub, target: beautyhub }
+          - { app: sbrbioforge, target: bioforge }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Vite app
+        working-directory: ./${{ matrix.app }}.com
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Deploy to Firebase Hosting
+        run: npx --yes firebase-tools@13 deploy --only "hosting:${{ matrix.target }}" --project "$PROJECT_ID" --non-interactive
