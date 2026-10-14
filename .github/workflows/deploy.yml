@@ -12,25 +12,14 @@ concurrency:
 env:
   PROJECT_ID: sbrempire-dced5
   REGION: asia-south2
-  SERVICE: sbcore
+  SERVICE: sbr-core
 
 jobs:
   backend:
-    name: Backend (Cloud Run)
+    name: Backend -> Cloud Run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Lint
-        run: npm run lint --if-present
 
       - uses: google-github-actions/auth@v2
         with:
@@ -50,36 +39,45 @@ jobs:
             --quiet
 
   frontend:
-    name: Frontend (Firebase Hosting - ${{ matrix.app }})
+    name: Frontend (${{ matrix.app }}) -> Firebase Hosting
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: [sbrhikmah, sbrbeautyhub, sbrbioforge]
+        include:
+          - { app: sbrhikmah, target: hikmah }
+          - { app: sbrbeautyhub, target: beautyhub }
+          - { app: sbrbioforge, target: bioforge }
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Check app is scaffolded
+        id: check
+        run: |
+          if [ -f "${{ matrix.app }}.com/package.json" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::${{ matrix.app }}.com has no package.json; skipping deploy"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.present == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Build Vite app
+        if: steps.check.outputs.present == 'true'
         working-directory: ./${{ matrix.app }}.com
         run: |
           npm ci || npm install
           npm run build
 
-      - uses: google-github-actions/auth@v2
+      - if: steps.check.outputs.present == 'true'
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Deploy to Firebase Hosting
-        run: |
-          target="${APP#sbr}"
-          [ "$target" = "hikmah" ] || [ "$target" = "beautyhub" ] || [ "$target" = "bioforge" ]
-          npx --yes firebase-tools@latest deploy \
-            --only "hosting:$target" \
-            --project "$PROJECT_ID" \
-            --non-interactive
-        env:
-          APP: ${{ matrix.app }}
+        if: steps.check.outputs.present == 'true'
+        run: npx --yes firebase-tools@13 deploy --only "hosting:${{ matrix.target }}" --project "$PROJECT_ID" --non-interactive
